@@ -24,6 +24,7 @@ export const HomeLayout = () => {
         return (
             <div className="flex items-center justify-center h-screen">
                 <div className="loader border-t-4 border-blue-500 rounded-full w-12 h-12 animate-spin"></div>
+                <h3 className="text-black">Backend is deployed in render so it might take some time to load</h3>
             </div>
         );
     }
