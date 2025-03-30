@@ -10,6 +10,7 @@ const VideoPlayer = () => {
   const [uploading, setUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [playing, setPlaying] = useState(false); // Controls auto-play
+  const API_URL = import.meta.env.VITE_API_URL;
 
   // Fetch videos from API
   useEffect(() => {
@@ -54,7 +55,7 @@ const VideoPlayer = () => {
 
     setUploading(true);
     try {
-      await axios.post("http://localhost:5000/api/videos/upload", formData, {
+      await axios.post(`${API_URL}/videos/upload`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       alert("Video uploaded successfully!");
