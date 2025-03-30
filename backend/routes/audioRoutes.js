@@ -5,6 +5,7 @@ import {
   getAudio,
   getAllAudios,
   updateAudioName,
+  deleteAudio,
 } from "../controllers/audioController.js";
 
 const router = express.Router();
@@ -20,5 +21,8 @@ router.get("/", getAllAudios); // Adjusted to return all audio files at the root
 
 // Update audio filename
 router.put("/update", updateAudioName); // Adjusted to update audio filename
+
+router.delete("/:filename", deleteAudio);
+
 
 export default router;

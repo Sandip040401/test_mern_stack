@@ -118,3 +118,26 @@ export const updateAudioName = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
+
+export const deleteAudio = async (req, res) => {
+  try {
+    const bucket = getBucket("audios"); // Get the GridFS bucket for audio
+    const { filename } = req.params;
+
+    // Find the file in GridFS
+    const file = await bucket.find({ filename }).toArray();
+
+    if (!file.length) {
+      return res.status(404).json({ message: "Audio file not found" });
+    }
+
+    // Delete the file
+    await bucket.delete(file[0]._id);
+
+    res.status(200).json({ message: "Audio deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting audio:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};

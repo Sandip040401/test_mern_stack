@@ -13,6 +13,15 @@ export const uploadAudio = (data) => axios.post(`${API_URL}/audios/upload`, data
 export const uploadPDF = (data) => axios.post(`${API_URL}/pdfs/upload`, data);
 
 
+export const deleteAudio = async (filename) => {
+    return await fetch(`${API_URL}/audios/${filename}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ filename }),
+    });
+  };
+  
+
 // update functions
 export const updatePDFName = async (oldFilename, newFilename) => {
     const response = await axios.put(`${API_URL}/pdfs/rename`, {

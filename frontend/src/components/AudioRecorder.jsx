@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { fetchAudios, uploadAudio, renameAudio, getAudioUrl } from "../api/mediaApi";
+import { fetchAudios, uploadAudio, renameAudio, getAudioUrl, deleteAudio  } from "../api/mediaApi";
 
 const AudioRecorder = () => {
   const [recording, setRecording] = useState(false);
@@ -112,11 +112,15 @@ const AudioRecorder = () => {
 
   const saveAudio = async () => {
     if (!audioBlob) return;
-
-    const audioFile = new File([audioBlob], "recorded-audio.wav", { type: "audio/wav" });
+  
+    // Generate timestamp-based filename
+    const timestamp = new Date().toISOString().replace(/[:.-]/g, ""); // Example: 20250330T153045
+    const filename = `recording_${timestamp}.wav`;
+  
+    const audioFile = new File([audioBlob], filename, { type: "audio/wav" });
     const formData = new FormData();
     formData.append("audio", audioFile);
-
+  
     try {
       await uploadAudio(formData);
       alert("Audio uploaded successfully");
@@ -127,6 +131,7 @@ const AudioRecorder = () => {
       console.error("Error uploading audio:", error);
     }
   };
+  
 
   const handleRename = async (index) => {
     const oldFilename = audioList[index].filename;
@@ -142,9 +147,20 @@ const AudioRecorder = () => {
     }
   };
 
+  const handleDelete = async (filename) => {
+    if (!window.confirm("Are you sure you want to delete this audio?")) return;
+  
+    try {
+      await deleteAudio(filename);
+      setAudioList(audioList.filter(audio => audio.filename !== filename));
+    } catch (error) {
+      console.error("Error deleting audio:", error);
+    }
+  };
+
   return (
     <div className="min-h-full text-white flex flex-col items-center justify-center">
-      <div className="w-full max-w-2xl p-6 rounded-lg shadow-lg border border-gray-700">
+      <div className="w-full max-w-3xl p-6 rounded-lg shadow-lg border border-gray-700">
         <h2 className="text-2xl font-bold text-black text-center mb-6">🎙️ Audio Recorder</h2>
 
         {/* Waveform Visualizer */}
@@ -206,24 +222,21 @@ const AudioRecorder = () => {
 
                     <div>
                       {editingIndex === index ? (
-                        <button
-                          onClick={() => handleRename(index)}
-                          className="text-green-500 underline ml-2"
-                        >
+                        <button onClick={() => handleRename(index)} className="text-green-500 underline ml-2">
                           Save
                         </button>
                       ) : (
-                        <button
-                          onClick={() => {
-                            setEditingIndex(index);
-                            setNewAudioName(audio.filename);
-                          }}
-                          className="text-blue-500 underline ml-2"
-                        >
-                          Rename
-                        </button>
+                        <>
+                          <button onClick={() => { setEditingIndex(index); setNewAudioName(audio.filename); }} className="text-blue-500 underline ml-2">
+                            Rename
+                          </button>
+                          <button onClick={() => handleDelete(audio.filename)} className="text-red-500 underline ml-2">
+                            Delete
+                          </button>
+                        </>
                       )}
                     </div>
+
                   </li>
                 ))
               ) : (

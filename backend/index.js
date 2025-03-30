@@ -1,6 +1,8 @@
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
+import path from "path";
+import { fileURLToPath } from "url";
 import videoRoutes from "./routes/videoRoutes.js";
 import audioRoutes from "./routes/audioRoutes.js";
 import pdfRoutes from "./routes/pdfRoutes.js";
@@ -8,6 +10,10 @@ import { connectDB } from "./config/db.js";
 
 dotenv.config();
 const app = express();
+
+// Get __dirname in ES module scope
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Middleware
 app.use(cors({
@@ -19,6 +25,9 @@ app.use(express.json());
 
 // Connect DB
 connectDB();
+
+// Serve WebGL files statically
+app.use("/webgl", express.static(path.join(__dirname, "WebGL")));
 
 // Routes
 app.use("/api/videos", videoRoutes);
