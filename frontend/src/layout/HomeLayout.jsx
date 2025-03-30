@@ -22,11 +22,13 @@ export const HomeLayout = () => {
 
     if (serverOnline === null) {
         return (
-            <div className="flex items-center justify-center h-screen">
-                <div className="loader border-t-4 border-blue-500 rounded-full w-12 h-12 animate-spin"></div>
-                <h3 className="text-black">Backend is deployed in render so it might take some time to load</h3>
+            <div className="flex flex-col items-center justify-center h-screen space-y-4 text-center">
+              <div className="loader border-t-4 border-blue-500 border-solid rounded-full w-16 h-16 animate-spin"></div>
+              <h3 className="text-gray-700 text-lg font-medium">
+                Backend is deployed on Render, so it might take a moment to load.
+              </h3>
             </div>
-        );
+          );          
     }
 
     return (
