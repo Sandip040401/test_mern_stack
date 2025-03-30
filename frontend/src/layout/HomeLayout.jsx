@@ -1,9 +1,32 @@
 import { Outlet } from "react-router-dom";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Sidebar from "../components/Sidebar";
+import axios from "axios";
 
 export const HomeLayout = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+    const [serverOnline, setServerOnline] = useState(null);
+    const API_URL = import.meta.env.VITE_API_URL;
+    useEffect(() => {
+        const checkServerStatus = async () => {
+            try {
+                await axios.get(`${API_URL}/health`); // Replace with your actual API endpoint
+                setServerOnline(true);
+            } catch (error) {
+                setServerOnline(false);
+            }
+        };
+
+        checkServerStatus();
+    }, []);
+
+    if (serverOnline === null) {
+        return (
+            <div className="flex items-center justify-center h-screen">
+                <div className="loader border-t-4 border-blue-500 rounded-full w-12 h-12 animate-spin"></div>
+            </div>
+        );
+    }
 
     return (
         <div className="w-full h-screen flex overflow-hidden">
