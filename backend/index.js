@@ -17,7 +17,7 @@ const __dirname = path.dirname(__filename);
 
 // Middleware
 app.use(cors({
-    origin: "http://localhost:5173", // Your React frontend URL
+    origin: "https://test-mern-stack.vercel.app", // Your React frontend URL
     methods: "GET,POST,PUT,DELETE",
     allowedHeaders: "Content-Type"
 }));
