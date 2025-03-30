@@ -27,7 +27,7 @@ app.use(express.json());
 connectDB();
 
 // Serve WebGL files statically
-app.use("/webgl", express.static(path.join(__dirname, "WebGL")));
+app.use("/api/webgl", express.static(path.join(__dirname, "WebGL")));
 
 // Routes
 app.use("/api/videos", videoRoutes);
