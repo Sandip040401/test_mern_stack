@@ -91,9 +91,11 @@ const uploadToGridFS = async (req, res, next) => {
     let filename = req.file.originalname;
 
     if (fileType === "videos") {
-      const convertedPath = await convertVideoToWebM(req.file.buffer, filename);
-      readableStream = fs.createReadStream(convertedPath);
-      filename = filename.replace(/\.\w+$/, ".webm");
+      // const convertedPath = await convertVideoToWebM(req.file.buffer, filename);
+      // readableStream = fs.createReadStream(convertedPath);
+      // filename = filename.replace(/\.\w+$/, ".webm");
+      readableStream = Readable.from(req.file.buffer); // Stream directly from memory
+
     } else if (fileType === "audios") {
       const convertedPath = await convertAudioToWebM(req.file.buffer, filename);
       readableStream = fs.createReadStream(convertedPath);
