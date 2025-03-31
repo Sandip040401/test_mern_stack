@@ -27,6 +27,7 @@ const connectDB = async () => {
 // Function to get the correct bucket
 const getBucket = (type) => {
   if (!buckets[type]) {
+    console.error(`Bucket ${type} is not initialized!`);
     throw new Error(`GridFSBucket for ${type} is not initialized yet`);
   }
   return buckets[type];
