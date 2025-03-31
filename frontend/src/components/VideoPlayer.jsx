@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { fetchVideos, getVideoUrl } from "../api/mediaApi";
 import ReactPlayer from "react-player";
 import axios from "axios";
+import { io } from "socket.io-client";
 
 const VideoPlayer = () => {
   const [videos, setVideos] = useState([]);
@@ -9,8 +10,11 @@ const VideoPlayer = () => {
   const [previewVideo, setPreviewVideo] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
-  const [playing, setPlaying] = useState(false); // Controls auto-play
+  const [playing, setPlaying] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [uploadComplete, setUploadComplete] = useState(false);
   const API_URL = import.meta.env.VITE_API_URL;
+  const [socket, setSocket] = useState(null);
 
   // Fetch videos from API
   useEffect(() => {
@@ -20,7 +24,7 @@ const VideoPlayer = () => {
         setVideos(response.data);
         if (response.data.length > 0) {
           setSelectedVideo(response.data[0].filename);
-          setPlaying(true); // Auto-play first video
+          setPlaying(true);
         }
       } catch (error) {
         console.error("Failed to load videos", error);
@@ -34,7 +38,7 @@ const VideoPlayer = () => {
     setSelectedVideo(filename);
     setPreviewVideo(null);
     setSelectedFile(null);
-    setPlaying(true); // Auto-play when selected
+    setPlaying(true);
   }, []);
 
   // Handle file selection
@@ -43,36 +47,70 @@ const VideoPlayer = () => {
     if (file) {
       setPreviewVideo(URL.createObjectURL(file));
       setSelectedFile(file);
-      setPlaying(true); // Auto-play preview
+      setPlaying(true);
     }
   };
 
-  // Handle upload
   const handleUpload = async () => {
     if (!selectedFile) return;
+    
+    setUploading(true);
+    setProgress(0);
+    setUploadComplete(false);
+  
     const formData = new FormData();
     formData.append("video", selectedFile);
-
-    setUploading(true);
+  
+    // Initialize WebSocket connection
+    const newSocket = io("ws://test-mern-stack-6jv4.onrender.com");
+    setSocket(newSocket);
+  
+    newSocket.on("uploadProgress", (data) => {
+      console.log("Upload Progress Data:", data); // Debugging log
+      if (data.progress !== undefined) {
+        setProgress(data.progress);
+      }
+    });
+  
+    newSocket.on("processingProgress", (data) => {
+      console.log("Processing Progress Data:", data); // Debugging log
+      if (data.progress !== undefined) {
+        setProgress(data.progress);
+      }
+      if (data.progress === 100) {
+        setUploadComplete(true);
+        newSocket.disconnect();
+      }
+    });
+  
     try {
       await axios.post(`${API_URL}/videos/upload`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
+        onUploadProgress: (progressEvent) => {
+          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          console.log("Axios Upload Progress:", percentCompleted); // Debugging log
+          setProgress(percentCompleted);
+        },
       });
+  
       alert("Video uploaded successfully!");
-      window.location.reload(); // Refresh to fetch updated videos
     } catch (error) {
       console.error("Upload failed", error);
       alert("Failed to upload video");
+    } finally {
+      setUploading(false);
+      setPreviewVideo(null);
+      setSelectedFile(null);
     }
-    setUploading(false);
-    setPreviewVideo(null);
-    setSelectedFile(null);
   };
-
+  
   // Handle cancel upload
   const handleCancelUpload = () => {
+    if (socket) socket.disconnect();
     setPreviewVideo(null);
     setSelectedFile(null);
+    setProgress(0);
+    setUploadComplete(false);
   };
 
   return (
@@ -138,6 +176,25 @@ const VideoPlayer = () => {
           </div>
         )}
       </div>
+
+      {/* Progress Bar */}
+{/* Progress Bar */}
+{progress > 0 && (
+  <div className="mt-6 w-full bg-gray-200 rounded-full overflow-hidden">
+    <div
+      className={`text-center text-white py-1 text-sm font-semibold ${
+        uploadComplete ? "bg-blue-500" : "bg-green-600"
+      }`}
+      style={{
+        width: `${progress}%`,
+        transition: "width 0.5s ease-in-out", // Smooth animation with delay
+      }}
+    >
+      {Math.round(progress)}% {/* Ensuring only the numeric progress is displayed */}
+    </div>
+  </div>
+)}
+
     </div>
   );
 };

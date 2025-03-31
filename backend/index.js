@@ -3,6 +3,8 @@ import dotenv from "dotenv";
 import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
+import { createServer } from "http";
+import { Server } from "socket.io";
 import videoRoutes from "./routes/videoRoutes.js";
 import audioRoutes from "./routes/audioRoutes.js";
 import pdfRoutes from "./routes/pdfRoutes.js";
@@ -10,6 +12,13 @@ import { connectDB } from "./config/db.js";
 
 dotenv.config();
 const app = express();
+const server = createServer(app);  // Create HTTP server
+const io = new Server(server, {
+    cors: {
+        origin: "https://test-mern-stack.vercel.app",
+        methods: ["GET", "POST"]
+    }
+});
 
 // Get __dirname in ES module scope
 const __filename = fileURLToPath(import.meta.url);
@@ -29,6 +38,21 @@ connectDB();
 // Serve WebGL files statically
 app.use("/api/webgl", express.static(path.join(__dirname, "WebGL")));
 
+// WebSocket Connection Handling
+io.on("connection", (socket) => {
+    console.log("A user connected");
+
+    socket.on("disconnect", () => {
+        console.log("User disconnected");
+    });
+});
+
+// Pass socket instance to routes/middleware
+app.use((req, res, next) => {
+    req.io = io;  // Attach WebSocket instance to request
+    next();
+});
+
 // Routes
 app.use("/api/videos", videoRoutes);
 app.use("/api/audios", audioRoutes);
@@ -39,4 +63,6 @@ app.get("/api/health", (req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+server.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+});
