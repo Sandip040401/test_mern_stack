@@ -46,6 +46,18 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                             {isOpen && <span>WebGL</span>}
                         </Link>
                     </li>
+                    <li>
+                        <Link to="/flipbook" className="flex items-center space-x-3 px-4 py-2 hover:bg-gray-700 rounded">
+                            <FiGrid size={20} />
+                            {isOpen && <span>FlipBook</span>}
+                        </Link>
+                    </li>
+                    <li>
+                        <Link to="/admin" className="flex items-center space-x-3 px-4 py-2 hover:bg-gray-700 rounded">
+                            <FiGrid size={20} />
+                            {isOpen && <span>AdminPanel</span>}
+                        </Link>
+                    </li>
                 </ul>
             </nav>
         </div>

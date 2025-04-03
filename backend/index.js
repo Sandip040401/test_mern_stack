@@ -9,13 +9,15 @@ import videoRoutes from "./routes/videoRoutes.js";
 import audioRoutes from "./routes/audioRoutes.js";
 import pdfRoutes from "./routes/pdfRoutes.js";
 import { connectDB } from "./config/db.js";
+import alphabetRoutes from "./routes/alphabetRoutes.js";
+
 
 dotenv.config();
 const app = express();
 const server = createServer(app);  // Create HTTP server
 const io = new Server(server, {
     cors: {
-        origin: "https://test-mern-stack.vercel.app",
+        origin: "http://localhost:5173",
         methods: ["GET", "POST"]
     }
 });
@@ -26,7 +28,7 @@ const __dirname = path.dirname(__filename);
 
 // Middleware
 app.use(cors({
-    origin: "https://test-mern-stack.vercel.app", // Your React frontend URL
+    origin: "http://localhost:5173", // Your React frontend URL
     methods: "GET,POST,PUT,DELETE",
     allowedHeaders: "Content-Type"
 }));
@@ -57,6 +59,7 @@ app.use((req, res, next) => {
 app.use("/api/videos", videoRoutes);
 app.use("/api/audios", audioRoutes);
 app.use("/api/pdfs", pdfRoutes);
+app.use("/api", alphabetRoutes);
 
 app.get("/api/health", (req, res) => {
     res.status(200).send("Server is online");

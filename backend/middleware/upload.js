@@ -114,10 +114,44 @@ const convertVideoToWebP = async (buffer, filename, ws) => {
 
 
 
+const convertAudioToWebM = async (buffer, filename, ws) => {
+  const pythonExecutable = await findPython();
+  return new Promise((resolve, reject) => {
+    const inputPath = join(tmpdir(), filename);
+    const outputPath = inputPath.replace(/\.\w+$/, ".webm");
+
+    fs.writeFileSync(inputPath, buffer);
+    console.log(`Processing audio: ${inputPath}`);
+
+    const pythonProcess = spawn(pythonExecutable, ["convert_audio.py", inputPath]);
+
+    pythonProcess.stderr.on("data", (data) => {
+      console.log(`[FFmpeg Error] ${data.toString()}`);
+    });
+
+    pythonProcess.stdout.on("data", (data) => {
+      const output = data.toString().trim();
+      console.log(`[FFmpeg Output] ${output}`);
+
+      if (output.startsWith("Conversion successful")) {
+        resolve(outputPath);
+      }
+    });
+
+    pythonProcess.on("close", (code) => {
+      fs.unlinkSync(inputPath);
+      if (code === 0) {
+        resolve(outputPath);
+      } else {
+        reject("FFmpeg conversion failed.");
+      }
+    });
+  });
+};
+
 // Upload to GridFS after conversion
 const uploadToGridFS = async (req, res, next) => {
   if (!req.file) {
-    console.error("❌ No file uploaded");
     return res.status(400).json({ message: "No file uploaded" });
   }
 
@@ -131,24 +165,20 @@ const uploadToGridFS = async (req, res, next) => {
 
     if (fileType === "videos") {
       console.log(`⏳ Converting video before upload: ${filename}`);
-      const convertedPath = await convertVideoToWebP(req.file.buffer, filename, req.io); // Pass WebSocket instance
+      const convertedPath = await convertVideoToWebP(req.file.buffer, filename, req.io);
       readableStream = fs.createReadStream(convertedPath);
       filename = filename.replace(/\.\w+$/, ".webm");
-    } else if (fileType === "pdfs") {
-      readableStream = Readable.from(req.file.buffer);
+    } else if (fileType === "audios") {
+      console.log(`⏳ Converting audio before upload: ${filename}`);
+      const convertedPath = await convertAudioToWebM(req.file.buffer, filename, req.io);
+      readableStream = fs.createReadStream(convertedPath);
+      filename = filename.replace(/\.\w+$/, ".webm");
     } else {
-      console.error("❌ Invalid file type");
-      return res.status(400).json({ message: "Invalid file type" });
+      readableStream = Readable.from(req.file.buffer);
     }
 
     const uploadStream = bucket.openUploadStream(filename, {
       contentType: req.file.mimetype,
-    });
-
-    let uploadedBytes = 0;
-    readableStream.on("data", (chunk) => {
-      uploadedBytes += chunk.length;
-      console.log(`📊 Uploaded: ${uploadedBytes} bytes`);
     });
 
     readableStream.pipe(uploadStream);
@@ -164,14 +194,13 @@ const uploadToGridFS = async (req, res, next) => {
     });
 
     uploadStream.on("error", (error) => {
-      console.error("❌ GridFS Upload Error:", error);
       res.status(500).json({ message: "Upload failed" });
     });
   } catch (error) {
-    console.error("❌ Processing Error:", error);
     res.status(500).json({ message: "Processing Error" });
   }
 };
+
 
 
 

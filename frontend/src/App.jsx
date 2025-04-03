@@ -6,6 +6,8 @@ import Audios from "./pages/Audios";
 import WebGL from "./pages/WebGL";
 import React from "react";
 import { HomeLayout } from "./layout/HomeLayout";
+import FlipBook from "./components/FlipBook";
+import AdminPanel from "./components/AdminPanel";
 
 function App() {
   return (
@@ -18,6 +20,8 @@ function App() {
           <Route path="audios" element={<Audios />} />
           <Route path="webgl" element={<WebGL />} />
         </Route>
+        <Route path="/flipbook" element={<FlipBook />} />
+        <Route path="/admin" element={<AdminPanel />} />
       </Routes>
     </Router>
   );
