@@ -29,7 +29,7 @@ router.get("/alphabets/:alphabet/words/:word/audio", getAudio);
 router.post("/alphabets/:alphabet/sentence/:wordId", addWordSentence);
 
 // ✅ Upload Audio for a Sentence
-router.post("/alphabets/:alphabet/sentence/audio", upload.single("file"), uploadWordSentenceAudio);
+router.post("/alphabets/sentence/audio/:alphabet/:wordId", upload.single("file"), uploadWordSentenceAudio);
 
 
 export default router;

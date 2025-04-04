@@ -76,6 +76,92 @@ const getAlphabets = async (req, res) => {
   }
 };
 
+// const getWordsByAlphabet = async (req, res) => {
+//   try {
+//     const { alphabet } = req.params;
+//     const bucket = getBucket("audios");
+
+//     // Fetch the alphabet entry
+//     const alphabetEntry = await Alphabet.findById(alphabet);
+
+//     if (!alphabetEntry) {
+//       return res.status(404).json({ message: "Alphabet not found" });
+//     }
+
+
+//     // Process words and fetch audio files
+//     const wordsWithAudio = await Promise.all(alphabetEntry.words.map(async (word) => {
+//       if (!word.audioFileId) {
+//         return { _id: word._id, word: word.word, audio: null };
+//       }
+
+//       // Fetch the word's audio file from GridFS
+//       const fileId = new mongoose.Types.ObjectId(word.audioFileId);
+//       const downloadStream = bucket.openDownloadStream(fileId);
+
+//       return new Promise((resolve, reject) => {
+//         let audioChunks = [];
+        
+//         downloadStream.on("data", (chunk) => {
+//           audioChunks.push(chunk);
+//         });
+
+//         downloadStream.on("end", () => {
+//           const audioBuffer = Buffer.concat(audioChunks);
+//           const base64Audio = audioBuffer.toString("base64"); // Convert to Base64
+
+//           resolve({ 
+//             _id: word._id, 
+//             word: word.word, 
+//             audio: `data:audio/mpeg;base64,${base64Audio}`,
+//             sentence: word.sentence || null
+//           });
+//         });
+
+//         downloadStream.on("error", (err) => reject(err));
+//       });
+//     }));
+
+//     // Fetch the sentence and sentence audio
+//     let sentenceData = { sentence: alphabetEntry.sentence || "No sentence found", sentenceAudio: null };
+
+
+//     if (alphabetEntry.sentenceAudioFileId) {
+//       try {
+//         const sentenceAudioId = new mongoose.Types.ObjectId(alphabetEntry.sentenceAudioFileId);
+//         const sentenceAudioStream = bucket.openDownloadStream(sentenceAudioId);
+
+//         sentenceData.sentenceAudio = await new Promise((resolve, reject) => {
+//           let audioChunks = [];
+          
+//           sentenceAudioStream.on("data", (chunk) => {
+//             audioChunks.push(chunk);
+//           });
+
+//           sentenceAudioStream.on("end", () => {
+//             const audioBuffer = Buffer.concat(audioChunks);
+//             const base64Audio = audioBuffer.toString("base64");
+//             resolve(`data:audio/mpeg;base64,${base64Audio}`);
+//           });
+
+//           sentenceAudioStream.on("error", (err) => reject(err));
+//         });
+
+//       } catch (err) {
+//         console.error("Error fetching sentence audio:", err);
+//       }
+//     }
+
+
+//     // Return words along with sentence data
+//     res.json({ words: wordsWithAudio, sentence: sentenceData.sentence, sentenceAudio: sentenceData.sentenceAudio });
+
+//   } catch (error) {
+//     console.error("Error:", error);
+//     res.status(500).json({ message: "Error fetching words, sentence, and audio" });
+//   }
+// };
+
 const getWordsByAlphabet = async (req, res) => {
   try {
     const { alphabet } = req.params;
@@ -88,78 +174,59 @@ const getWordsByAlphabet = async (req, res) => {
       return res.status(404).json({ message: "Alphabet not found" });
     }
 
+    // Process words and fetch audio & sentence audio files
+    const wordsWithAudio = await Promise.all(
+      alphabetEntry.words.map(async (word) => {
+        let wordAudio = null;
+        let sentenceAudio = null;
 
-    // Process words and fetch audio files
-    const wordsWithAudio = await Promise.all(alphabetEntry.words.map(async (word) => {
-      if (!word.audioFileId) {
-        return { _id: word._id, word: word.word, audio: null };
-      }
+        // Fetch word audio if available
+        if (word.audioFileId) {
+          const fileId = new mongoose.Types.ObjectId(word.audioFileId);
+          const downloadStream = bucket.openDownloadStream(fileId);
+          wordAudio = await streamToBase64(downloadStream);
+        }
 
-      // Fetch the word's audio file from GridFS
-      const fileId = new mongoose.Types.ObjectId(word.audioFileId);
-      const downloadStream = bucket.openDownloadStream(fileId);
+        // Fetch sentence audio if available
+        if (word.sentenceAudioFileId) {
+          const sentenceAudioId = new mongoose.Types.ObjectId(word.sentenceAudioFileId);
+          const sentenceAudioStream = bucket.openDownloadStream(sentenceAudioId);
+          sentenceAudio = await streamToBase64(sentenceAudioStream);
+        }
 
-      return new Promise((resolve, reject) => {
-        let audioChunks = [];
-        
-        downloadStream.on("data", (chunk) => {
-          audioChunks.push(chunk);
-        });
+        return {
+          _id: word._id,
+          word: word.word,
+          audio: wordAudio,
+          sentence: word.sentence || null,
+          sentenceAudio: sentenceAudio
+        };
+      })
+    );
 
-        downloadStream.on("end", () => {
-          const audioBuffer = Buffer.concat(audioChunks);
-          const base64Audio = audioBuffer.toString("base64"); // Convert to Base64
-
-          resolve({ 
-            _id: word._id, 
-            word: word.word, 
-            audio: `data:audio/mpeg;base64,${base64Audio}` 
-          });
-        });
-
-        downloadStream.on("error", (err) => reject(err));
-      });
-    }));
-
-    // Fetch the sentence and sentence audio
-    let sentenceData = { sentence: alphabetEntry.sentence || "No sentence found", sentenceAudio: null };
-
-
-    if (alphabetEntry.sentenceAudioFileId) {
-      try {
-        const sentenceAudioId = new mongoose.Types.ObjectId(alphabetEntry.sentenceAudioFileId);
-        const sentenceAudioStream = bucket.openDownloadStream(sentenceAudioId);
-
-        sentenceData.sentenceAudio = await new Promise((resolve, reject) => {
-          let audioChunks = [];
-          
-          sentenceAudioStream.on("data", (chunk) => {
-            audioChunks.push(chunk);
-          });
-
-          sentenceAudioStream.on("end", () => {
-            const audioBuffer = Buffer.concat(audioChunks);
-            const base64Audio = audioBuffer.toString("base64");
-            resolve(`data:audio/mpeg;base64,${base64Audio}`);
-          });
-
-          sentenceAudioStream.on("error", (err) => reject(err));
-        });
-
-      } catch (err) {
-        console.error("Error fetching sentence audio:", err);
-      }
-    }
-
-
-    // Return words along with sentence data
-    res.json({ words: wordsWithAudio, sentence: sentenceData.sentence, sentenceAudio: sentenceData.sentenceAudio });
+    // Return words with their individual sentence & audio
+    res.json({ words: wordsWithAudio });
 
   } catch (error) {
     console.error("Error:", error);
-    res.status(500).json({ message: "Error fetching words, sentence, and audio" });
+    res.status(500).json({ message: "Error fetching words and audio" });
   }
 };
+
+// Helper function to convert GridFS stream to Base64
+const streamToBase64 = (downloadStream) => {
+  return new Promise((resolve, reject) => {
+    let audioChunks = [];
+
+    downloadStream.on("data", (chunk) => audioChunks.push(chunk));
+    downloadStream.on("end", () => {
+      const audioBuffer = Buffer.concat(audioChunks);
+      resolve(`data:audio/mpeg;base64,${audioBuffer.toString("base64")}`);
+    });
+    downloadStream.on("error", (err) => reject(err));
+  });
+};
+
 
 
 
@@ -222,11 +289,12 @@ const uploadWordSentenceAudio = async (req, res) => {
   if (!req.file) return res.status(400).json({ message: "No file uploaded" });
 
   try {
-    const { alphabetId, wordId } = req.params;
+    const { alphabet, wordId } = req.params;
+    
     const bucket = getBucket("audios");
-
+    
     // Find Alphabet
-    const alphabetEntry = await Alphabet.findById(alphabetId);
+    const alphabetEntry = await Alphabet.findById(alphabet);
     if (!alphabetEntry) return res.status(404).json({ message: "Alphabet not found" });
 
     // Find the word inside the alphabet

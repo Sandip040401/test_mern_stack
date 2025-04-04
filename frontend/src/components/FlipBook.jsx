@@ -1,39 +1,42 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { GiKangaroo } from "react-icons/gi"; // Kangaroo for slow speed (0.5x)
+import { FaRunning } from "react-icons/fa"; // Human running for normal speed (1x)
+import { FaHorseHead } from "react-icons/fa"; // Horse for fast speed (1.5x)
 
 const FlipBook = () => {
   const [alphabets, setAlphabets] = useState([]);
   const [wordsData, setWordsData] = useState({});
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(0);
+  const [selectedWord, setSelectedWord] = useState(null);
+  const [audioSpeed, setAudioSpeed] = useState(1); // Default speed is 1x
   let currentAudio = null;
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch alphabets
         const alphabetRes = await axios.get("http://localhost:5000/api/alphabets");
         const alphabetList = alphabetRes.data;
         setAlphabets(alphabetList);
 
-        // Fetch words, sentence, and audio for each alphabet
         const wordRequests = alphabetList.map((alphabet) =>
           axios.get(`http://localhost:5000/api/alphabets/${alphabet._id}/words`)
         );
 
         const responses = await Promise.all(wordRequests);
 
-        // Store data in correct format
         const wordsObj = responses.reduce((acc, response, idx) => {
-          acc[alphabetList[idx]._id] = {
-            words: Array.isArray(response.data.words) ? response.data.words : [],
-            sentence: response.data.sentence || "",
-            sentenceAudio: response.data.sentenceAudio || "",
-          };
+          acc[alphabetList[idx]._id] = Array.isArray(response.data.words) ? response.data.words : [];
           return acc;
         }, {});
 
         setWordsData(wordsObj);
+
+        if (alphabetList.length > 0 && wordsObj[alphabetList[0]._id]?.length > 0) {
+          setSelectedWord(wordsObj[alphabetList[0]._id][0]);
+        }
+
         setLoading(false);
       } catch (err) {
         console.error("Error fetching data", err);
@@ -43,13 +46,18 @@ const FlipBook = () => {
     fetchData();
   }, []);
 
-  const playAudio = (audioSrc) => {
+  const playAudio = (audioSrc, speed = 1) => {
     if (!audioSrc) return;
     if (currentAudio) {
       currentAudio.pause();
     }
     currentAudio = new Audio(audioSrc);
+    currentAudio.playbackRate = speed;
     currentAudio.play();
+  };
+
+  const handleWordClick = (word) => {
+    setSelectedWord(word);
   };
 
   const totalPages = alphabets.length;
@@ -58,12 +66,24 @@ const FlipBook = () => {
   const nextPage = () => {
     if (!isLastPage) {
       setCurrentPage(currentPage + 1);
+      const newAlphabetId = alphabets[currentPage + 1]?._id;
+      if (newAlphabetId && wordsData[newAlphabetId]?.length > 0) {
+        setSelectedWord(wordsData[newAlphabetId][0]);
+      } else {
+        setSelectedWord(null);
+      }
     }
   };
 
   const prevPage = () => {
     if (currentPage > 0) {
       setCurrentPage(currentPage - 1);
+      const newAlphabetId = alphabets[currentPage - 1]?._id;
+      if (newAlphabetId && wordsData[newAlphabetId]?.length > 0) {
+        setSelectedWord(wordsData[newAlphabetId][0]);
+      } else {
+        setSelectedWord(null);
+      }
     }
   };
 
@@ -71,43 +91,48 @@ const FlipBook = () => {
 
   return (
     <div className="flex justify-center items-center h-screen bg-blue-300">
-      <div className="relative w-[900px] h-[550px] bg-white shadow-2xl rounded-xl overflow-hidden flex border-4 border-blue-400">
-
+      <div className="relative w-[900px] h-[550px] bg-white shadow-2xl rounded-xl overflow-hidden flex flex-col border-4 border-blue-400">
+        
+        {/* Flipbook Content */}
         {alphabets.map(({ _id, letter }, index) => {
           if (currentPage === index) {
             return (
-              <div key={_id} className="w-full h-full flex">
+              <div key={_id} className="flex-grow flex">
                 {/* Left Side - Word List */}
                 <div className="w-1/2 p-6 bg-cover bg-center flex flex-col" style={{ backgroundImage: "url('background.png')" }}>
                   <h2 className="text-2xl font-bold text-blue-700 mb-4 border-b-2 pb-2">
                     Word Family - /{letter}/ words
                   </h2>
                   <div className="space-y-3 overflow-y-auto max-h-[400px]">
-                    {(Array.isArray(wordsData[_id]?.words) ? wordsData[_id].words : []).map((word, idx) => (
-                      <div key={idx} className="flex items-center justify-between ml-62 space-x-2">
+                    {wordsData[_id]?.map((word, idx) => (
+                      <div key={idx} className="flex items-center justify-between space-x-2">
                         <button
                           onClick={() => playAudio(word.audio)}
                           className="bg-white p-2 rounded-full shadow-md hover:bg-green-200 transition rotate-180"
                         >
                           🔊
                         </button>
-                        <span className="text-lg bg-green-500 text-white p-2 rounded-lg shadow-md w-40 text-center">
+                        <button
+                          onClick={() => handleWordClick(word)}
+                          className={`text-lg p-2 rounded-lg shadow-md w-40 text-center ${
+                            selectedWord?.word === word.word ? "bg-green-700 text-white" : "bg-green-500 text-white"
+                          }`}
+                        >
                           {word.word}
-                        </span>
+                        </button>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                {/* Right Side - Sentence and Audio */}
-                <div className="w-1/2 p-6 flex flex-col items-center justify-center bg-cover bg-center text-center" style={{ backgroundImage: "url('right.png')" }}>
-                  {/* Sentence */}
-                  {wordsData[_id]?.sentence && (
+                {/* Right Side - Sentence and Speed Control */}
+                <div className="w-1/2 p-6 flex flex-col items-center justify-center bg-cover bg-center text-center relative" style={{ backgroundImage: "url('right.png')" }}>
+                  {selectedWord && (
                     <div className="mt-6 text-center">
-                      <p className="text-lg font-semibold text-gray-800">{wordsData[_id].sentence}</p>
-                      {wordsData[_id]?.sentenceAudio && (
+                      <p className="text-lg font-semibold text-gray-800">{selectedWord.sentence}</p>
+                      {selectedWord.sentenceAudio && (
                         <button
-                          onClick={() => playAudio(wordsData[_id].sentenceAudio)}
+                          onClick={() => playAudio(selectedWord.sentenceAudio, audioSpeed)}
                           className="mt-2 bg-blue-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-600 transition"
                         >
                           🔊 Play Sentence
@@ -116,6 +141,33 @@ const FlipBook = () => {
                     </div>
                   )}
 
+                  {/* Speed Control Icons */}
+                  <div className="absolute top-4 right-4 flex flex-col space-y-3">
+                    <button
+                      onClick={() => setAudioSpeed(0.5)}
+                      className={`p-2 rounded-full shadow-md text-white ${
+                        audioSpeed === 0.5 ? "bg-green-600" : "bg-gray-400 hover:bg-gray-500"
+                      }`}
+                    >
+                      <GiKangaroo size={25} />
+                    </button>
+                    <button
+                      onClick={() => setAudioSpeed(1)}
+                      className={`p-2 rounded-full shadow-md text-white ${
+                        audioSpeed === 1 ? "bg-green-600" : "bg-gray-400 hover:bg-gray-500"
+                      }`}
+                    >
+                      <FaRunning size={25} />
+                    </button>
+                    <button
+                      onClick={() => setAudioSpeed(1.5)}
+                      className={`p-2 rounded-full shadow-md text-white ${
+                        audioSpeed === 1.5 ? "bg-green-600" : "bg-gray-400 hover:bg-gray-500"
+                      }`}
+                    >
+                      <FaHorseHead size={25} />
+                    </button>
+                  </div>
                 </div>
               </div>
             );
@@ -123,24 +175,24 @@ const FlipBook = () => {
           return null;
         })}
 
-        {/* Navigation Buttons */}
-        {currentPage > 0 && (
+        {/* Pagination Controls */}
+        <div className="flex justify-between items-center bg-gray-200 p-4">
           <button
             onClick={prevPage}
-            className="absolute bottom-4 left-4 bg-gray-500 text-white px-5 py-2 rounded-lg shadow-md hover:bg-gray-600 transition"
+            disabled={currentPage === 0}
+            className="px-4 py-2 bg-blue-500 text-white rounded-lg shadow-md disabled:bg-gray-400"
           >
-            ← Previous
+            ⬅️ Previous
           </button>
-        )}
-
-        {!isLastPage && (
+          <span className="text-lg font-semibold">Page {currentPage + 1} / {totalPages}</span>
           <button
             onClick={nextPage}
-            className="absolute bottom-4 right-4 bg-blue-500 text-white px-5 py-2 rounded-lg shadow-md hover:bg-blue-600 transition"
+            disabled={isLastPage}
+            className="px-4 py-2 bg-blue-500 text-white rounded-lg shadow-md disabled:bg-gray-400"
           >
-            Next →
+            Next ➡️
           </button>
-        )}
+        </div>
       </div>
     </div>
   );

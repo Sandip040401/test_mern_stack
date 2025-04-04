@@ -9,6 +9,7 @@ const AdminPanel = () => {
   const [newWord, setNewWord] = useState("");
   const [newAudio, setNewAudio] = useState(null);
   const [selectedWord, setSelectedWord] = useState(null); // For audio upload
+  const [selectedWordName, setSelectedWordName] = useState(null); // For audio upload
   const [loadingWords, setLoadingWords] = useState(false);
   const [sentence, setSentence] = useState("");
   const [sentenceAudio, setSentenceAudio] = useState(null);
@@ -80,6 +81,7 @@ const AdminPanel = () => {
     }
   };
 
+console.log(selectedWordName);
 
   const addSentence = async () => {
     if (!selectedAlphabet || !sentence) {
@@ -104,7 +106,7 @@ const AdminPanel = () => {
       const formData = new FormData();
       formData.append("file", sentenceAudio);
 
-      await axios.post(`http://localhost:5000/api/alphabets/${selectedAlphabet._id}/sentence/audio`, formData);
+      await axios.post(`http://localhost:5000/api/alphabets/sentence/audio/${selectedAlphabet._id}/${selectedWord}`, formData);
       alert("Sentence audio uploaded successfully!");
     } catch (err) {
       console.error("Error uploading sentence audio", err);
@@ -175,13 +177,19 @@ const AdminPanel = () => {
           <h2 className="text-xl font-semibold">Add Audio</h2>
           <select
             className="border p-2 rounded w-full"
-            onChange={(e) => setSelectedWord(e.target.value)}
+            onChange={(e) => {
+              const selectedId = e.target.value;
+              const selectedWordObj = words.find((word) => word._id === selectedId);
+              setSelectedWord(selectedId);
+              setSelectedWordName(selectedWordObj);
+            }}
           >
             <option value="">-- Select Word --</option>
             {words.map((word) => (
               <option key={word._id} value={word._id}>{word.word}</option>
             ))}
           </select>
+
           <div className="flex space-x-3 mt-3">
             <input
               type="file"
@@ -199,9 +207,9 @@ const AdminPanel = () => {
       {selectedWord && (
         <div className="mt-3">
           {/* If the selected word has a sentence, show only the audio upload option */}
-          {selectedWord.sentence ? (
+          {selectedWordName.sentence ? (
             <div className="mt-3">
-              <p className="text-lg font-semibold">Sentence: {selectedWord.sentence}</p>
+              <p className="text-lg font-semibold">Sentence: {selectedWordName.sentence}</p>
               <div className="flex space-x-3 mt-3">
                 <input
                   type="file"
