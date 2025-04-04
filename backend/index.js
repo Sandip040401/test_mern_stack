@@ -17,7 +17,7 @@ const app = express();
 const server = createServer(app);  // Create HTTP server
 const io = new Server(server, {
     cors: {
-        origin: "https://test-mern-stack.vercel.app/",
+        origin: "https://test-mern-stack.vercel.app",
         methods: ["GET", "POST"]
     }
 });
@@ -28,7 +28,7 @@ const __dirname = path.dirname(__filename);
 
 // Middleware
 app.use(cors({
-    origin: "https://test-mern-stack.vercel.app/", // Your React frontend URL
+    origin: "https://test-mern-stack.vercel.app", // Your React frontend URL
     methods: "GET,POST,PUT,DELETE",
     allowedHeaders: "Content-Type"
 }));
