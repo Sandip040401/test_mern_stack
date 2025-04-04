@@ -15,9 +15,10 @@ const AdminPanel = () => {
   const [sentenceAudio, setSentenceAudio] = useState(null);
   const [existingSentence, setExistingSentence] = useState("");
   const [existingSentenceAudio, setExistingSentenceAudio] = useState(null);
+  const API_URL = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
-    axios.get("http://localhost:5000/api/alphabets")
+    axios.get(`${API_URL}/alphabets`)
       .then((res) => setAlphabets(res.data))
       .catch((err) => console.error("Error fetching alphabets", err));
   }, []);
@@ -25,7 +26,7 @@ const AdminPanel = () => {
   useEffect(() => {
     if (selectedAlphabet) {
       setLoadingWords(true);
-      axios.get(`http://localhost:5000/api/alphabets/${selectedAlphabet._id}/words`)
+      axios.get(`${API_URL}/alphabets/${selectedAlphabet._id}/words`)
         .then((res) => {
           setWords(res.data.words || []);
           setLoadingWords(false);
@@ -44,7 +45,7 @@ const AdminPanel = () => {
     }
 
     try {
-      const res = await axios.post("http://localhost:5000/api/alphabets", { letter: newAlphabet.toUpperCase() });
+      const res = await axios.post(`${API_URL}/alphabets`, { letter: newAlphabet.toUpperCase() });
       setAlphabets([...alphabets, res.data]);
       setNewAlphabet("");
     } catch (err) {
@@ -56,7 +57,7 @@ const AdminPanel = () => {
     if (!selectedAlphabet || !newWord) return alert("Select an alphabet and enter a word.");
 
     try {
-      const res = await axios.post(`http://localhost:5000/api/alphabets/${selectedAlphabet._id}/words`, { word: newWord });
+      const res = await axios.post(`${API_URL}/alphabets/${selectedAlphabet._id}/words`, { word: newWord });
       setWords(res.data.words || []);
       setNewWord("");
     } catch (err) {
@@ -73,7 +74,7 @@ const AdminPanel = () => {
       const formData = new FormData();
       formData.append("file", newAudio);
 
-      await axios.post(`http://localhost:5000/api/alphabets/${selectedAlphabet._id}/words/${selectedWord}/audio`, formData);
+      await axios.post(`${API_URL}/alphabets/${selectedAlphabet._id}/words/${selectedWord}/audio`, formData);
       setNewAudio(null);
       alert("Audio added successfully!");
     } catch (err) {
@@ -81,7 +82,7 @@ const AdminPanel = () => {
     }
   };
 
-console.log(selectedWordName);
+
 
   const addSentence = async () => {
     if (!selectedAlphabet || !sentence) {
@@ -89,7 +90,7 @@ console.log(selectedWordName);
     }
 
     try {
-      await axios.post(`http://localhost:5000/api/alphabets/${selectedAlphabet._id}/sentence/${selectedWord}`, { sentence });
+      await axios.post(`${API_URL}/alphabets/${selectedAlphabet._id}/sentence/${selectedWord}`, { sentence });
       setExistingSentence(sentence);
       alert("Sentence added successfully!");
     } catch (err) {
@@ -106,7 +107,7 @@ console.log(selectedWordName);
       const formData = new FormData();
       formData.append("file", sentenceAudio);
 
-      await axios.post(`http://localhost:5000/api/alphabets/sentence/audio/${selectedAlphabet._id}/${selectedWord}`, formData);
+      await axios.post(`${API_URL}/alphabets/sentence/audio/${selectedAlphabet._id}/${selectedWord}`, formData);
       alert("Sentence audio uploaded successfully!");
     } catch (err) {
       console.error("Error uploading sentence audio", err);

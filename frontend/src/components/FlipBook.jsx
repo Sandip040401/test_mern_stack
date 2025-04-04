@@ -12,16 +12,17 @@ const FlipBook = () => {
   const [selectedWord, setSelectedWord] = useState(null);
   const [audioSpeed, setAudioSpeed] = useState(1); // Default speed is 1x
   let currentAudio = null;
+  const API_URL = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const alphabetRes = await axios.get("http://localhost:5000/api/alphabets");
+        const alphabetRes = await axios.get(`${API_URL}/alphabets`);
         const alphabetList = alphabetRes.data;
         setAlphabets(alphabetList);
 
         const wordRequests = alphabetList.map((alphabet) =>
-          axios.get(`http://localhost:5000/api/alphabets/${alphabet._id}/words`)
+          axios.get(`${API_URL}/alphabets/${alphabet._id}/words`)
         );
 
         const responses = await Promise.all(wordRequests);
