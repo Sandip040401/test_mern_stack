@@ -16,7 +16,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
             {/* Navigation Menu */}
             <nav className="mt-4 flex-1">
                 <ul className="space-y-2">
-                    {/* <li>
+                    <li>
                         <Link to="/" className="flex items-center space-x-3 px-4 py-2 hover:bg-gray-700 rounded">
                             <FiHome size={20} />
                             {isOpen && <span>Home</span>}
@@ -45,7 +45,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                             <FiGrid size={20} />
                             {isOpen && <span>WebGL</span>}
                         </Link>
-                    </li> */}
+                    </li>
                     <li>
                         <Link to="/flipbook" className="flex items-center space-x-3 px-4 py-2 hover:bg-gray-700 rounded">
                             <FiGrid size={20} />
