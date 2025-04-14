@@ -62,7 +62,7 @@ const VideoPlayer = () => {
     formData.append("video", selectedFile);
   
     // Initialize WebSocket connection
-    const newSocket = io("ws://localhost:5000");
+    const newSocket = io("ws://test-mern-stack-6jv4.onrender.com");
     setSocket(newSocket);
   
     newSocket.on("uploadProgress", (data) => {
